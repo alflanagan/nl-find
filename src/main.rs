@@ -29,10 +29,3 @@ fn main() {
     println!("Hello, world!");
 }
 
-#[test]
-fn nlfind() {
-    assert!(grammar::TermParser::new().parse("22").is_ok());
-    assert!(grammar::TermParser::new().parse("(22)").is_ok());
-    assert!(grammar::TermParser::new().parse("((((22))))").is_ok());
-    assert!(grammar::TermParser::new().parse("((22)").is_err());
-}
