@@ -19,20 +19,22 @@ OR
 
 Licensed under the MIT License, see file LICENSE-MIT.txt
 */
+extern crate clap;
+extern crate libc; // to get user's locale, for one
 
-#[macro_use]
-extern crate lalrpop_util;
-
-lalrpop_mod!(pub calculator1);
+use clap::App;
 
 fn main() {
-    println!("Hello, world!");
-}
+    // cargo should install all the localized arguments files
+    let arg_str = include_str!("args/en_US.yml");
 
-#[test]
-fn calculator1() {
-    assert!(calculator1::TermParser::new().parse("22").is_ok());
-    assert!(calculator1::TermParser::new().parse("(22)").is_ok());
-    assert!(calculator1::TermParser::new().parse("((((22))))").is_ok());
-    assert!(calculator1::TermParser::new().parse("((22)").is_err());
+    // load_yaml!() requires string literal -- what's that about?
+    let yaml_vec = clap::YamlLoader::load_from_str(arg_str).expect("Error reading YAML file");
+
+    let yaml = &yaml_vec[0];
+    if yaml.is_null() {
+        panic!("Dammit");
+    }
+    let app = App::from_yaml(&yaml);
+    let _matches = app.get_matches();
 }
