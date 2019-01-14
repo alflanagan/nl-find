@@ -1,0 +1,21 @@
+{
+    "folders": [{
+        "path": "."
+    }],
+    "settings": {
+        "files.exclude": {
+            "**/target": true
+        },
+        "files.associations": {
+            "*.lalrpop": "rust"
+        },
+        "workbench.editor.highlightModifiedTabs": true,
+        "terminal.integrated.copyOnSelection": true,
+        "rust.cfg_test": true,
+        "rust.clippy_preference": "on",
+        "editor.wordWrapColumn": 100,
+        "editor.wordWrap": "wordWrapColumn",
+        "editor.scrollBeyondLastLine": false,
+        "editor.formatOnSave": true
+    },
+}
