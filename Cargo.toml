@@ -1,9 +1,15 @@
 [package]
 name = "nl-find"
 version = "0.1.0"
+publish = false
 authors = ["Adrian L Flanagan <a.lloyd.flanagan@gmail.com>"]
 edition = "2018"
 build = "build.rs"
+description = "An implementation of find with more natural query arguments."
+repository = "git@github.com:alflanagan/nl-find.git"
+keywords = ["find", "utility", "search"]
+categories = ["command-line-utilities", "filesystem"]
+license = "MIT OR Apache-2.0"
 
 [build-dependencies]
 lalrpop = "0.16.2"
@@ -11,3 +17,8 @@ lalrpop = "0.16.2"
 [dependencies]
 lalrpop-util = "0.16.2"
 regex = "1.1.0"
+glob = "0.2.11"
+
+[dev-dependencies]
+mockers = "0.12.2"
+mockers_derive = "0.12.2"
