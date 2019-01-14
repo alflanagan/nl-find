@@ -1,3 +1,25 @@
+/*
+Copyright [2019] [Adrian Lloyd Flanagan]
+
+DUAL LICENSE
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+OR
+
+Licensed under the MIT License, see file LICENSE-MIT.txt
+*/
+
 /**
  * Define a custom lexer for LALRPOP, which takes as input the shell-parsed list
  * of arguments.
@@ -15,37 +37,69 @@ pub mod arg_lexer {
      */
     pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
+    /**
+     * Known directory entry types.
+     */
+    #[derive(Debug, PartialEq)]
+    pub enum EntryType {
+        File,
+        Directory,
+        Link,
+        BlockSpecial,
+        CharSpecial,
+    }
+
+    /**
+     * Lexical tokens in our DSL.
+     */
     #[derive(Debug, PartialEq)]
     pub enum Tok {
         /// A fixed word used to construct the query
-        Keyword,
+        Keyword(String),
         /// A file or directory name
-        Pathspec,
+        Pathspec(String),
+        /// A pattern to be matched to file or directory names
+        /// Problem? unescaped globspec that matches nothing looks exactly like escaped
+        GlobSpec(String),
         /// A word selecting a specific type of directory entry (file, directory, link, etc.)
-        EntryType,
+        EntryType(String),
         /// A fixed word defining what to do with the selected entries
-        Actionword,
+        Actionword(String),
+        /// A file type
+        Etype(EntryType),
     }
 
+    /**
+     * List of keywords in our DSL
+     */
     pub fn keywords() -> Vec<&'static str> {
-        vec!["name", "type"]
+        vec!["named", "type"]
     }
 
+    /**
+     * List of words we recognize for directory entry types.
+     */
     pub fn etypes() -> Vec<&'static str> {
         vec!["file", "dir", "directory", "link", "block", "char"]
     }
 
+    /**
+     * List of words that specify what to do with found entries.
+     */
     pub fn actions() -> Vec<&'static str> {
         vec!["print", "delete"]
     }
 
+    /**
+     * A custom lexer for LARLPOP. It takes as input a list of arguments passed on the command line,* matches the arguments to classify them for the parser.
+     */
     pub struct Lexer<'input> {
-        args: Vec<&'input String>,
+        args: Vec<&'input str>,
         index: usize,
     }
 
     impl<'input> Lexer<'input> {
-        pub fn new(input: Vec<&'input String>) -> Self {
+        pub fn new(input: Vec<&'input str>) -> Self {
             Lexer {
                 args: input,
                 index: 0,
@@ -53,24 +107,35 @@ pub mod arg_lexer {
         }
     }
 
-    #[derive(Debug)]
-    pub enum LexicalError {
-        // anything not a keyword, action, etc. is a path or a pattern
-    }
-
     impl<'input> Iterator for Lexer<'input> {
         type Item = Spanned<Tok, usize, LexicalError>;
 
         fn next(&mut self) -> Option<Self::Item> {
             let arg = self.args[self.index];
+            let word_index = self.index;
             self.index += 1;
             let word = &arg.to_lowercase()[..];
             if keywords().contains(&word) {
-                Some(Ok((self.index - 1, Tok::Keyword, self.index - 1)))
+                Some(Ok((word_index, Tok::Keyword(word.to_string()), word_index)))
+            } else if actions().contains(&word) {
+                Some(Ok((
+                    word_index,
+                    Tok::Actionword(word.to_string()),
+                    word_index,
+                )))
             } else {
-                Some(Ok((self.index - 1, Tok::Pathspec, self.index - 1)))
+                Some(Ok((
+                    word_index,
+                    Tok::Pathspec(word.to_string()),
+                    word_index,
+                )))
             }
         }
+    }
+
+    #[derive(Debug)]
+    pub enum LexicalError {
+        // anything not a keyword, action, etc. is a path or a pattern
     }
 }
 
@@ -80,19 +145,33 @@ mod tests {
 
     #[test]
     fn parses_keyword() {
-        let name = String::from("name");
-        let args = vec![&name];
+        let args = vec!["named"];
         let mut lex = Lexer::new(args);
         let item = lex.next().unwrap();
         match item {
             Ok((loc1, token, loc2)) => {
                 assert_eq!(loc1, 0);
-                assert_eq!(token, Tok::Keyword);
+                assert_eq!(token, Tok::Keyword("named".to_string()));
                 assert_eq!(loc2, 0);
             }
             Err(error) => {
                 panic!("Test failed: {:?}", error);
             }
         }
+    }
+
+    #[test]
+    fn parses_path() {
+        let args = vec!["/home/fred/devel/src", "named", "*.rs"];
+        let mut lex = Lexer::new(args);
+        let (index, token, _) = lex.next().unwrap().unwrap();
+        assert_eq!(index, 0);
+        assert_eq!(token, Tok::Pathspec("/home/fred/devel/src".to_string()));
+        let (index, token, _) = lex.next().unwrap().unwrap();
+        assert_eq!(index, 1);
+        assert_eq!(token, Tok::Keyword("named".to_string()));
+        let (index, token, _) = lex.next().unwrap().unwrap();
+        assert_eq!(index, 2);
+        assert_eq!(token, Tok::Pathspec("*.rs".to_string()));
     }
 }
