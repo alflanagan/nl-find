@@ -18,7 +18,3 @@ lalrpop = "0.16.2"
 lalrpop-util = "0.16.2"
 regex = "1.1.0"
 glob = "0.2.11"
-
-[dev-dependencies]
-mockers = "0.12.2"
-mockers_derive = "0.12.2"
